@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+{% block title %}Upload & Scan{% endblock %}
+
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-8">
+        <!-- Hero -->
+        <div class="text-center mb-4">
+            <h1 class="display-6 fw-bold">
+                <i class="bi bi-shield-fill-check text-primary me-2"></i>NinjaScan
+            </h1>
+            <p class="text-muted">
+                Static analysis platform — inspect suspicious files without executing them.
+                Detect malware patterns using YARA rules, PE analysis, script inspection, and document checks.
+            </p>
+        </div>
+
+        <!-- Upload Card -->
+        <div class="card shadow-sm">
+            <div class="card-body p-4">
+                <div id="drop-zone" class="drop-zone border border-2 border-dashed rounded-3 p-5 text-center mb-3">
+                    <i class="bi bi-cloud-upload display-3 text-muted mb-3 d-block"></i>
+                    <h5 class="mb-1">Drag &amp; drop a file here</h5>
+                    <p class="text-muted small mb-3">or click to browse</p>
+                    <input type="file" id="file-input" class="d-none" name="file">
+                    <button type="button" class="btn btn-primary" id="browse-btn">
+                        <i class="bi bi-folder2-open me-2"></i>Browse File
+                    </button>
+                </div>
+
+                <!-- Selected file info -->
+                <div id="file-info" class="d-none mb-3">
+                    <div class="d-flex align-items-center gap-2 p-3 bg-light rounded">
+                        <i class="bi bi-file-earmark-text fs-4 text-primary"></i>
+                        <div class="flex-grow-1 text-truncate">
+                            <div id="file-name" class="fw-semibold"></div>
+                            <div id="file-size" class="text-muted small"></div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-outline-secondary" id="clear-file">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Progress bar -->
+                <div id="upload-progress" class="d-none mb-3">
+                    <div class="d-flex justify-content-between small text-muted mb-1">
+                        <span id="progress-label">Uploading...</span>
+                        <span id="progress-pct">0%</span>
+                    </div>
+                    <div class="progress">
+                        <div id="progress-bar" class="progress-bar progress-bar-striped progress-bar-animated"
+                             role="progressbar" style="width:0%"></div>
+                    </div>
+                </div>
+
+                <!-- Error/status -->
+                <div id="upload-error" class="d-none alert alert-danger py-2"></div>
+
+                <!-- Scan button -->
+                <div class="d-grid">
+                    <button type="button" class="btn btn-success btn-lg" id="scan-btn" disabled>
+                        <i class="bi bi-search me-2"></i>Scan File
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Supported types -->
+        <div class="row g-2 mt-3 text-center small text-muted">
+            <div class="col-6 col-md-3">
+                <i class="bi bi-file-earmark-code text-warning me-1"></i>
+                EXE, DLL
+            </div>
+            <div class="col-6 col-md-3">
+                <i class="bi bi-file-earmark-word text-primary me-1"></i>
+                DOC, DOCX, PDF
+            </div>
+            <div class="col-6 col-md-3">
+                <i class="bi bi-file-earmark-text text-info me-1"></i>
+                PS1, VBS, JS, BAT
+            </div>
+            <div class="col-6 col-md-3">
+                <i class="bi bi-file-earmark-zip text-secondary me-1"></i>
+                ZIP, RAR, TXT
+            </div>
+        </div>
+        <div class="text-center mt-2 small text-muted">
+            <i class="bi bi-exclamation-circle me-1"></i>Max file size: 50 MB
+        </div>
+    </div>
+</div>
+
+{% if recent_scans %}
+<div class="row justify-content-center mt-5">
+    <div class="col-lg-8">
+        <h5 class="mb-3"><i class="bi bi-clock-history me-2"></i>Recent Scans</h5>
+        <div class="list-group">
+            {% for scan in recent_scans %}
+            <a href="{{ url_for('main.results', scan_id=scan.id) }}"
+               class="list-group-item list-group-item-action d-flex justify-content-between align-items-center">
+                <div>
+                    <i class="bi bi-file-earmark me-2 text-muted"></i>
+                    <span class="fw-medium">{{ scan.filename }}</span>
+                    <small class="text-muted ms-2">{{ scan.file_size | filesizeformat if scan.file_size else '' }}</small>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge verdict-{{ scan.verdict }}">{{ scan.verdict | upper }}</span>
+                    <span class="badge risk-{{ scan.risk_level }}">{{ scan.risk_level | upper }}</span>
+                    <small class="text-muted">{{ scan.scan_timestamp.strftime('%b %d, %H:%M') }}</small>
+                </div>
+            </a>
+            {% endfor %}
+        </div>
+        <div class="text-end mt-2">
+            <a href="{{ url_for('main.history') }}" class="btn btn-sm btn-outline-secondary">
+                View all history <i class="bi bi-arrow-right ms-1"></i>
+            </a>
+        </div>
+    </div>
+</div>
+{% endif %}
+{% endblock %}
