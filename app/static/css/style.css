@@ -1,0 +1,68 @@
+/* NinjaScan custom styles */
+
+/* Verdict badges */
+.badge.verdict-clean    { background-color: #198754; color: #fff; }
+.badge.verdict-suspicious { background-color: #ffc107; color: #212529; }
+.badge.verdict-malicious  { background-color: #dc3545; color: #fff; }
+
+/* Risk badges */
+.badge.risk-low      { background-color: #20c997; color: #fff; }
+.badge.risk-medium   { background-color: #fd7e14; color: #fff; }
+.badge.risk-high     { background-color: #dc3545; color: #fff; }
+.badge.risk-critical { background-color: #6f42c1; color: #fff; }
+.badge.risk-unknown  { background-color: #6c757d; color: #fff; }
+
+/* Verdict banner backgrounds */
+.verdict-bg-clean     { background: linear-gradient(135deg, #d1e7dd 0%, #f8f9fa 100%); }
+.verdict-bg-suspicious { background: linear-gradient(135deg, #fff3cd 0%, #f8f9fa 100%); }
+.verdict-bg-malicious  { background: linear-gradient(135deg, #f8d7da 0%, #f8f9fa 100%); }
+
+/* Drop zone */
+.drop-zone {
+    border-color: #dee2e6 !important;
+    transition: all 0.2s ease;
+    cursor: pointer;
+}
+.drop-zone:hover,
+.drop-zone.drag-over {
+    border-color: #0d6efd !important;
+    background-color: #f0f7ff;
+}
+
+/* Card headers with collapse toggle */
+.card-header[data-bs-toggle="collapse"] {
+    cursor: pointer;
+    user-select: none;
+}
+.card-header[data-bs-toggle="collapse"]:hover {
+    filter: brightness(0.96);
+}
+
+/* Monospace small */
+.font-monospace.small, .small.font-monospace {
+    font-size: 0.78rem;
+}
+
+/* Table truncation */
+td .text-truncate {
+    vertical-align: middle;
+}
+
+/* Navbar brand */
+.navbar-brand {
+    font-size: 1.3rem;
+    letter-spacing: -0.5px;
+}
+
+/* Progress bar */
+.progress {
+    height: 8px;
+    border-radius: 4px;
+}
+
+/* Responsive tweaks */
+@media (max-width: 576px) {
+    .verdict-banner .display-4 {
+        font-size: 2rem;
+    }
+}

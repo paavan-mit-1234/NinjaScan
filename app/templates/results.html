@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% block title %}Scan Results — {{ scan.filename }}{% endblock %}
+
+{% block content %}
+<!-- Verdict Banner -->
+<div class="row justify-content-center mb-4">
+    <div class="col-lg-10">
+        <div class="verdict-banner card shadow-sm border-0 verdict-bg-{{ scan.verdict }}">
+            <div class="card-body py-4">
+                <div class="d-flex flex-wrap align-items-center gap-3">
+                    {% if scan.verdict == 'malicious' %}
+                        <i class="bi bi-x-octagon-fill display-4 text-danger"></i>
+                    {% elif scan.verdict == 'suspicious' %}
+                        <i class="bi bi-exclamation-triangle-fill display-4 text-warning"></i>
+                    {% else %}
+                        <i class="bi bi-check-circle-fill display-4 text-success"></i>
+                    {% endif %}
+                    <div class="flex-grow-1">
+                        <h2 class="mb-1 fw-bold text-truncate">{{ scan.filename }}</h2>
+                        <div class="d-flex flex-wrap gap-2 align-items-center">
+                            <span class="badge fs-6 verdict-{{ scan.verdict }}">{{ scan.verdict | upper }}</span>
+                            <span class="badge fs-6 risk-{{ scan.risk_level }}">
+                                <i class="bi bi-thermometer-half me-1"></i>{{ scan.risk_level | upper }} RISK
+                            </span>
+                        </div>
+                    </div>
+                    <div class="text-end text-muted small">
+                        <div><i class="bi bi-hash me-1"></i>{{ scan.file_hash[:16] }}...</div>
+                        <div><i class="bi bi-hdd me-1"></i>{{ scan.file_size }} bytes</div>
+                        <div><i class="bi bi-clock me-1"></i>{{ scan.scan_timestamp.strftime('%Y-%m-%d %H:%M:%S') }} UTC</div>
+                        <div><i class="bi bi-speedometer me-1"></i>{{ scan.analysis_duration }}s</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row justify-content-center">
+    <div class="col-lg-10">
+
+        <!-- Summary cards -->
+        <div class="row g-3 mb-4">
+            <div class="col-sm-6 col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body py-3">
+                        <div class="fs-1 fw-bold {% if scan.yara_matches %}text-danger{% else %}text-success{% endif %}">
+                            {{ scan.yara_matches | length }}
+                        </div>
+                        <div class="small text-muted">YARA Matches</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body py-3">
+                        {% set pe = scan.findings.get('pe_analysis', []) %}
+                        <div class="fs-1 fw-bold {% if pe %}text-warning{% else %}text-muted{% endif %}">
+                            {{ pe | length }}
+                        </div>
+                        <div class="small text-muted">PE Findings</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body py-3">
+                        {% set sc = scan.findings.get('script_analysis', []) %}
+                        <div class="fs-1 fw-bold {% if sc %}text-warning{% else %}text-muted{% endif %}">
+                            {{ sc | length }}
+                        </div>
+                        <div class="small text-muted">Script Findings</div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-sm-6 col-md-3">
+                <div class="card text-center h-100">
+                    <div class="card-body py-3">
+                        {% set doc = scan.findings.get('document_analysis', []) %}
+                        <div class="fs-1 fw-bold {% if doc %}text-warning{% else %}text-muted{% endif %}">
+                            {{ doc | length }}
+                        </div>
+                        <div class="small text-muted">Doc Findings</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- YARA Matches -->
+        {% if scan.yara_matches %}
+        <div class="card mb-3 border-danger">
+            <div class="card-header bg-danger text-white d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#yara-section" style="cursor:pointer">
+                <span><i class="bi bi-bug-fill me-2"></i>YARA Rule Matches ({{ scan.yara_matches | length }})</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="yara-section">
+                <div class="card-body p-0">
+                    {% for match in scan.yara_matches %}
+                    <div class="p-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="d-flex flex-wrap justify-content-between align-items-start gap-2">
+                            <div>
+                                <span class="fw-semibold text-danger">
+                                    <i class="bi bi-shield-fill-x me-1"></i>{{ match.rule }}
+                                </span>
+                                <br>
+                                <small class="text-muted">{{ match.description }}</small>
+                            </div>
+                            <span class="badge risk-{{ match.severity }}">{{ match.severity | upper }}</span>
+                        </div>
+                        {% if match.strings %}
+                        <div class="mt-2">
+                            {% for s in match.strings[:3] %}
+                            <div class="font-monospace small text-muted">
+                                <span class="text-secondary">{{ s.identifier }}</span>
+                                {% for inst in s.instances[:2] %}
+                                <span class="ms-2 text-body-secondary">@{{ inst.offset }}: </span>
+                                <code>{{ inst.matched_data }}</code>
+                                {% endfor %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- PE Analysis -->
+        {% set pe_findings = scan.findings.get('pe_analysis', []) %}
+        {% if pe_findings %}
+        <div class="card mb-3 border-warning">
+            <div class="card-header bg-warning text-dark d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#pe-section" style="cursor:pointer">
+                <span><i class="bi bi-cpu-fill me-2"></i>PE Analysis ({{ pe_findings | length }} findings)</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="pe-section">
+                <div class="card-body p-0">
+                    {% for finding in pe_findings %}
+                    <div class="p-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <span class="badge bg-secondary me-2">{{ finding.category | replace('_', ' ') | upper }}</span>
+                        <span class="small">{{ finding.detail }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Script Analysis -->
+        {% set script_findings = scan.findings.get('script_analysis', []) %}
+        {% if script_findings %}
+        <div class="card mb-3 border-info">
+            <div class="card-header bg-info text-dark d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#script-section" style="cursor:pointer">
+                <span><i class="bi bi-terminal-fill me-2"></i>Script Inspection ({{ script_findings | length }} findings)</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="script-section">
+                <div class="card-body p-0">
+                    {% for finding in script_findings %}
+                    <div class="p-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div>
+                                <span class="fw-medium">{{ finding.description }}</span>
+                                {% if finding.sample %}
+                                <div class="mt-1">
+                                    <code class="small text-muted">{{ finding.sample }}</code>
+                                </div>
+                                {% endif %}
+                            </div>
+                            <div class="d-flex gap-2 align-items-center">
+                                <span class="badge bg-secondary">×{{ finding.match_count }}</span>
+                                <span class="badge risk-{{ finding.severity }}">{{ finding.severity | upper }}</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Document Analysis -->
+        {% set doc_findings = scan.findings.get('document_analysis', []) %}
+        {% if doc_findings %}
+        <div class="card mb-3 border-primary">
+            <div class="card-header bg-primary text-white d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#doc-section" style="cursor:pointer">
+                <span><i class="bi bi-file-earmark-text-fill me-2"></i>Document Analysis ({{ doc_findings | length }} findings)</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="doc-section">
+                <div class="card-body p-0">
+                    {% for finding in doc_findings %}
+                    <div class="p-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <span class="badge bg-secondary me-2">{{ finding.category | replace('_', ' ') | upper }}</span>
+                        <span class="small">{{ finding.detail }}</span>
+                        {% if finding.severity is defined %}
+                        <span class="badge risk-{{ finding.severity }} ms-1">{{ finding.severity | upper }}</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Archive Analysis -->
+        {% set archive_findings = scan.findings.get('archive_analysis', []) %}
+        {% if archive_findings %}
+        <div class="card mb-3">
+            <div class="card-header d-flex justify-content-between align-items-center"
+                 data-bs-toggle="collapse" data-bs-target="#archive-section" style="cursor:pointer">
+                <span><i class="bi bi-archive-fill me-2"></i>Archive Analysis ({{ archive_findings | length }} findings)</span>
+                <i class="bi bi-chevron-down"></i>
+            </div>
+            <div class="collapse show" id="archive-section">
+                <div class="card-body p-0">
+                    {% for finding in archive_findings %}
+                    <div class="p-3 {% if not loop.last %}border-bottom{% endif %}">
+                        <span class="small">{{ finding }}</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- Clean result -->
+        {% if not scan.yara_matches and not scan.findings %}
+        <div class="card border-success">
+            <div class="card-body text-center py-5">
+                <i class="bi bi-check-circle-fill display-3 text-success mb-3"></i>
+                <h4 class="text-success">No Threats Detected</h4>
+                <p class="text-muted mb-0">This file appears clean. No suspicious patterns were found.</p>
+            </div>
+        </div>
+        {% endif %}
+
+        <!-- File metadata -->
+        <div class="card mt-3">
+            <div class="card-header" data-bs-toggle="collapse" data-bs-target="#meta-section" style="cursor:pointer">
+                <i class="bi bi-info-circle me-2"></i>File Metadata
+                <i class="bi bi-chevron-down float-end"></i>
+            </div>
+            <div class="collapse" id="meta-section">
+                <div class="card-body">
+                    <table class="table table-sm mb-0">
+                        <tr><th style="width:180px">Filename</th><td class="font-monospace">{{ scan.filename }}</td></tr>
+                        <tr><th>SHA256</th><td class="font-monospace small">{{ scan.file_hash }}</td></tr>
+                        <tr><th>File Size</th><td>{{ scan.file_size }} bytes</td></tr>
+                        <tr><th>MIME Type</th><td>{{ scan.file_type or 'Unknown' }}</td></tr>
+                        <tr><th>Scan Time</th><td>{{ scan.scan_timestamp.strftime('%Y-%m-%d %H:%M:%S') }} UTC</td></tr>
+                        <tr><th>Duration</th><td>{{ scan.analysis_duration }}s</td></tr>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="d-flex justify-content-between mt-3">
+            <a href="{{ url_for('main.index') }}" class="btn btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>Scan Another
+            </a>
+            <a href="{{ url_for('main.history') }}" class="btn btn-outline-primary">
+                <i class="bi bi-clock-history me-1"></i>View History
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}
